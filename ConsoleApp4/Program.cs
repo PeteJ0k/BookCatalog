@@ -15,7 +15,7 @@ namespace ConsoleApp4
 
                 while (true)
                 {
-                    Console.WriteLine("\nВведите команду (add/show/remove/find/count/stats/exit):");
+                    Console.WriteLine("\nВведите команду (add/show/remove/find/count/stats/borrow/return/exit):");
                     string result = Console.ReadLine();
 
                     switch (result)
@@ -104,6 +104,35 @@ namespace ConsoleApp4
                         case "stats":
                             Console.WriteLine(library.GetAuthorStats());
                             break;
+                        case "borrow":
+                            Console.WriteLine($"{library.GetAllBookFormatted()}");
+                            int borrowNumber = GetValidInt("Введите номер книги для выдачи");
+                            var allbooks = library.GetAllBooks();
+                            if (borrowNumber >= 1 && borrowNumber <= allbooks.Count)
+                            {
+                                allbooks[borrowNumber - 1].Borrow();
+                                db.SaveChanges();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Такого номера книги не существует");
+                            }
+                            break;
+                        case "return":
+                            Console.WriteLine(library.GetAllBookFormatted());
+                            int returnNumber = GetValidInt("Введите номер книги для возврата");
+                            var allbook = library.GetAllBooks();
+                            if (returnNumber >= 1 && returnNumber <= allbook.Count)
+                            {
+                                allbook[returnNumber - 1].Return();
+                                db.SaveChanges();
+                            }
+                            else
+                            {
+                                Console.WriteLine("Такой книги не существует");
+                            }
+
+                                break;
                         case "exit":
                             Console.WriteLine("Программа завершена.");
                             return;
@@ -116,7 +145,6 @@ namespace ConsoleApp4
             }
         }
 
-        // ---- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ВВОДА ----
         static int GetValidInt(string message)
         {
             int result = 0;

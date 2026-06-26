@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace ConsoleApp4
 {
-    internal class IBorrowable
+    public interface IBorrowable
     {
+        void Borrow();
+        void Return();
+        bool IsBorrowed {  get; }
     }
 }
