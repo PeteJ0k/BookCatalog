@@ -1,121 +1,122 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using ConsoleApp4;
 
 namespace ConsoleApp4
 {
     internal class Program
     {
-        static string filePath = "books.txt";
-
         static void Main(string[] args)
         {
             using (var db = new AppDbContext())
             {
                 db.Database.EnsureCreated();
+                var library = new LibraryService(db);
 
                 while (true)
                 {
-                    Console.WriteLine("\nВведите команду (add/show/remove/exit):");
+                    Console.WriteLine("\nВведите команду (add/show/remove/find/count/stats/exit):");
                     string result = Console.ReadLine();
 
-                    if (result == "add")
+                    switch (result)
                     {
-                        // Логика добавления книги в базу данных
-                        Console.WriteLine("Введите тип книги (paperbook/ebook):");
-                        string type = Console.ReadLine();
+                        case "add":
+                            Console.WriteLine("Введите тип книги (paperbook/ebook):");
+                            string type = Console.ReadLine();
 
-                        Console.WriteLine("Введите название книги:");
-                        string title = Console.ReadLine();
+                            Console.WriteLine("Введите название книги:");
+                            string title = Console.ReadLine();
 
-                        Console.WriteLine("Введите автора книги:");
-                        string author = Console.ReadLine();
+                            Console.WriteLine("Введите автора книги:");
+                            string author = Console.ReadLine();
 
-                        if (type == "paperbook")
-                        {
-                            int pageCount = GetValidInt("Введите количество страниц:");
-                            PaperBook paper = new PaperBook(pageCount, title, author);
-                            db.Books.Add(paper);
-                            db.SaveChanges();
-                            Console.WriteLine("Книга добавлена!");
-                        }
-                        else if (type == "ebook")
-                        {
-                            double fileSize = GetValidDouble("Введите размер файла (МБ):");
-                            EBook ebook = new EBook(fileSize, title, author);
-                            db.Books.Add(ebook);
-                            db.SaveChanges();
-                            Console.WriteLine("Книга добавлена!");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Такого типа книги нет.");
-                        }
-                    }
-                    else if (result == "show")
-                    {
-                        // Чтение всех книг из базы данных
-                        var books = db.Books.ToList();
-
-                        if (books.Count == 0)
-                        {
-                            Console.WriteLine("Список книг пуст.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("\n=== Список книг ===");
-                            for (int i = 0; i < books.Count; i++)
+                            if (type == "paperbook")
                             {
-                                Console.WriteLine($"{i + 1}. {books[i].GetInfo()}");
+                                int pageCount = GetValidInt("Введите количество страниц:");
+                                library.AddPaperBook(title, author, pageCount);
+                                Console.WriteLine("Книга добавлена!");
                             }
-                        }
-                    }
-                    else if (result == "remove")
-                    {
-                        // Логика удаления книги
-                        var books = db.Books.ToList();
+                            else if (type == "ebook")
+                            {
+                                double fileSize = GetValidDouble("Введите размер файла (МБ):");
+                                library.AddEBook(title, author, fileSize);
+                                Console.WriteLine("Книга добавлена!");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Такого типа книги нет.");
+                            }
+                            break;
 
-                        if (books.Count == 0)
-                        {
-                            Console.WriteLine("Список книг пуст. Нечего удалять.");
-                            continue;
-                        }
+                        case "show":
 
-                        Console.WriteLine("\n=== Список книг ===");
-                        for (int i = 0; i < books.Count; i++)
-                        {
-                            Console.WriteLine($"{i + 1}. {books[i].GetInfo()}");
-                        }
+                            Console.WriteLine(library.GetAllBookFormatted());
+                            break;
 
-                        int booknumber = GetValidInt("Введите номер книги для удаления:");
+                        case "remove":
+                            var allBooks = library.GetAllBooks();
+                            if (allBooks.Count == 0)
+                            {
+                                Console.WriteLine("Список книг пуст. Нечего удалять.");
+                                break;
+                            }
 
-                        if (booknumber >= 1 && booknumber <= books.Count)
-                        {
-                            var bookToRemove = books[booknumber - 1];
-                            db.Books.Remove(bookToRemove);
-                            db.SaveChanges();
-                            Console.WriteLine($"Книга удалена.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Неверный номер.");
-                        }
-                    }
-                    else if (result == "exit")
-                    {
-                        Console.WriteLine("Программа завершена.");
-                        break;
-                    }
-                    else
-                    {
-                        Console.WriteLine("Неизвестная команда.");
+                            Console.WriteLine("\n=== Список книг ===");
+                            for (int i = 0; i < allBooks.Count; i++)
+                            {
+                                Console.WriteLine($"{i + 1}. {allBooks[i].GetInfo()}");
+                            }
+
+                            int bookNumber = GetValidInt("Введите номер книги для удаления:");
+                            if (bookNumber >= 1 && bookNumber <= allBooks.Count)
+                            {
+                                library.RemoveBook(allBooks[bookNumber - 1].Id);
+                                Console.WriteLine("Книга удалена.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Неверный номер.");
+                            }
+                            break;
+
+                        case "find":
+                            Console.WriteLine("Введите автора для поиска его книг:");
+                            string findAuthor = Console.ReadLine();
+
+                            var foundBooks = library.FindBooksByAuthor(findAuthor);
+                            if (foundBooks.Count == 0)
+                            {
+                                Console.WriteLine("Книг с таким автором не найдено.");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Найдено книг с таким автором: {foundBooks.Count}");
+                                for (int i = 0; i < foundBooks.Count; i++)
+                                {
+                                    Console.WriteLine($"{i + 1}. {foundBooks[i].GetInfo()}");
+                                }
+                            }
+                            break;
+
+                        case "count":
+                            Console.WriteLine($"Всего книг в библиотеке: {library.BookCount()}");
+                            break;
+                        case "stats":
+                            Console.WriteLine(library.GetAuthorStats());
+                            break;
+                        case "exit":
+                            Console.WriteLine("Программа завершена.");
+                            return;
+
+                        default:
+                            Console.WriteLine("Неизвестная команда.");
+                            break;
                     }
                 }
             }
         }
+
+        // ---- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ВВОДА ----
         static int GetValidInt(string message)
         {
             int result = 0;
@@ -166,57 +167,6 @@ namespace ConsoleApp4
                 }
             }
             return result;
-        }
-        static void SaveBooks(List<Book> books)
-        {
-            using (StreamWriter writer = new StreamWriter(filePath))
-            {
-                foreach (Book book in books)
-                {
-                    if (book is PaperBook paper)
-                    {
-                        writer.WriteLine($"PaperBook|{paper.Title}|{paper.Author}|{paper.PageCount}");
-                    }
-                    else if (book is EBook ebook)
-                    {
-                        writer.WriteLine($"EBook|{ebook.Title}|{ebook.Author}|{ebook.FileSize}");
-                    }
-                }
-            }
-        }
-
-        static List<Book> LoadBooks()
-        {
-            List<Book> books = new List<Book>();
-
-            if (File.Exists(filePath))
-            {
-                using (StreamReader reader = new StreamReader(filePath))
-                {
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        string[] parts = line.Split('|');
-                        if (parts.Length < 4) continue;
-
-                        string type = parts[0];
-                        string title = parts[1];
-                        string author = parts[2];
-
-                        if (type == "PaperBook")
-                        {
-                            int pageCount = int.Parse(parts[3]);
-                            books.Add(new PaperBook(pageCount, title, author));
-                        }
-                        else if (type == "EBook")
-                        {
-                            double fileSize = double.Parse(parts[3]);
-                            books.Add(new EBook(fileSize, title, author));
-                        }
-                    }
-                }
-            }
-            return books;
         }
     }
 }
