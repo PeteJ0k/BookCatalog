@@ -1,9 +1,10 @@
 ﻿using System;
 
-namespace ConsoleApp2
+namespace ConsoleApp4
 {
     public abstract class Book
     {
+        public int Id { get; set; }
         public string Title { get; set; }
         public string Author { get; set; }
 
